@@ -38,8 +38,9 @@ export const ConfiguracionView: React.FC = () => {
 
   const handleSavePin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPin.length === 4) {
-      setUser(prev => ({ ...prev, pinCode: newPin }));
+    const clean = newPin.trim();
+    if (clean.length >= 4) {
+      setUser(prev => ({ ...prev, pinCode: clean, password: clean }));
       setPinSuccess(true);
       setNewPin('');
       setTimeout(() => setPinSuccess(false), 3000);
@@ -106,23 +107,22 @@ export const ConfiguracionView: React.FC = () => {
             </button>
           </div>
 
-          {/* Change PIN */}
+          {/* Change Password / PIN */}
           <form onSubmit={handleSavePin} className="space-y-2.5">
             <label className="text-[10px] uppercase font-bold text-slate-400 block">
-              Cambiar PIN de Acceso (4 Dígitos)
+              Cambiar Clave de Acceso (PIN o Contraseña)
             </label>
             <div className="flex gap-2">
               <input
-                type="password"
-                maxLength={4}
+                type="text"
                 value={newPin}
                 onChange={(e) => setNewPin(e.target.value)}
-                placeholder="Nuevo PIN (ej: 5678)"
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono placeholder:text-slate-600 focus:outline-none focus:border-cyan-500"
+                placeholder="Nuevo PIN numérico o contraseña (ej: 5678 o MiClave2026)"
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500"
               />
               <button
                 type="submit"
-                disabled={newPin.length !== 4}
+                disabled={newPin.trim().length < 4}
                 className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 font-bold text-xs uppercase rounded-xl transition-all"
               >
                 Actualizar
@@ -130,9 +130,12 @@ export const ConfiguracionView: React.FC = () => {
             </div>
             {pinSuccess && (
               <div className="text-xs text-emerald-400 flex items-center gap-1 mt-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> PIN actualizado correctamente
+                <CheckCircle2 className="w-3.5 h-3.5" /> Clave actualizada correctamente
               </div>
             )}
+            <span className="text-[10px] text-slate-500 block">
+              Puedes configurar un PIN de 4 números o una contraseña segura con letras y números (mínimo 4 caracteres).
+            </span>
           </form>
         </div>
 

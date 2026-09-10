@@ -9,6 +9,7 @@ export interface UserProfile {
   familyId: string;
   familyName: string;
   pinCode: string;
+  password?: string;
   biometricEnabled: boolean;
 }
 

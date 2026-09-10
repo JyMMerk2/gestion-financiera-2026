@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FinancialProvider, useFinancial } from './context/FinancialContext';
 import { TopBar } from './components/TopBar';
 import { QuickChipsNav, ActiveTab } from './components/QuickChipsNav';
-import { BiometricAuthModal } from './components/BiometricAuthModal';
+import { LoginScreen } from './components/LoginScreen';
 import { FamilyManagementModal } from './components/FamilyManagementModal';
 import { NotificationCenterModal } from './components/NotificationCenterModal';
 import { SharedCalendarModal } from './components/SharedCalendarModal';
@@ -26,6 +26,7 @@ import { ConfiguracionView } from './views/ConfiguracionView';
 import { CoopShare } from './types';
 
 const MainLayout: React.FC = () => {
+  const { isBiometricLocked } = useFinancial();
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
 
   // Modal Visibility States
@@ -55,6 +56,10 @@ const MainLayout: React.FC = () => {
   const handleOpenCoopModal = (coop: CoopShare) => {
     setSelectedCoopShare(coop);
   };
+
+  if (isBiometricLocked) {
+    return <LoginScreen />;
+  }
 
   return (
     <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
@@ -110,8 +115,6 @@ const MainLayout: React.FC = () => {
       </main>
 
       {/* Modals & Dialogs */}
-      <BiometricAuthModal onOpenUserAuth={handleOpenUserAuth} />
-
       <UserAuthModal
         isOpen={showUserAuthModal}
         onClose={() => setShowUserAuthModal(false)}

@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
-import { Fingerprint, Lock, ShieldCheck, KeyRound, AlertCircle } from 'lucide-react';
+import { Fingerprint, Lock, ShieldCheck, AlertCircle } from 'lucide-react';
 import { useFinancial } from '../context/FinancialContext';
 
-interface BiometricAuthModalProps {
-  onOpenUserAuth?: (mode: 'register' | 'login' | 'recover' | 'join') => void;
-}
-
-export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({ onOpenUserAuth }) => {
+export const BiometricAuthModal: React.FC = () => {
   const { isBiometricLocked, unlockWithPinOrBiometric, user } = useFinancial();
   const [pin, setPin] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -150,30 +146,9 @@ export const BiometricAuthModal: React.FC<BiometricAuthModalProps> = ({ onOpenUs
           </button>
         </div>
 
-        <div className="mt-4 flex flex-col gap-2 w-full text-center">
-          {onOpenUserAuth && (
-            <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800/80">
-              <button
-                type="button"
-                onClick={() => onOpenUserAuth('recover')}
-                className="text-cyan-400 hover:underline font-medium text-[11px]"
-              >
-                ¿Olvidaste tu PIN?
-              </button>
-              <button
-                type="button"
-                onClick={() => onOpenUserAuth('register')}
-                className="text-slate-300 hover:text-white font-medium text-[11px]"
-              >
-                + Crear Usuario
-              </button>
-            </div>
-          )}
-
-          <div className="text-[10px] text-slate-500 flex items-center justify-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Cifrado local con clave de bóveda familiar (PIN inicial: 1234)</span>
-          </div>
+        <div className="mt-4 text-[10px] text-slate-500 flex items-center gap-1">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Cifrado local con clave de bóveda familiar (PIN inicial: 1234)</span>
         </div>
       </div>
     </div>

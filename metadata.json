@@ -1,6 +1,6 @@
 {
-  "name": "Gestión Financiera Familiar",
-  "description": "Plataforma integral de gestión financiera familiar multi-moneda con control de presupuestos, wallets, préstamos, patrimonio neto y sincronización colaborativa.",
+  "name": "Gestión Financiera",
+  "description": "Gestiona tus finanzas de manera eficiente y segura.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
