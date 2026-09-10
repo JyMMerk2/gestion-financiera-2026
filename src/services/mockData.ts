@@ -27,6 +27,7 @@ export const INITIAL_USER: UserProfile = {
   familyId: 'fam-1',
   familyName: 'Familia Mercado',
   pinCode: '1234',
+  password: '1234',
   biometricEnabled: true,
 };
 
@@ -41,6 +42,7 @@ export const INITIAL_REGISTERED_USERS: UserProfile[] = [
     familyId: 'fam-1',
     familyName: 'Familia Mercado',
     pinCode: '4321',
+    password: '4321',
     biometricEnabled: true,
   },
 ];

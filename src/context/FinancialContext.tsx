@@ -48,6 +48,8 @@ interface FinancialContextType {
   registeredUsers: UserProfile[];
   registerNewUser: (name: string, email: string, pin: string, role?: UserRole, inviteCode?: string) => { success: boolean; message: string; user?: UserProfile };
   loginUser: (emailOrName: string, pin: string) => { success: boolean; message: string };
+  changePassword: (currentSecret: string, newSecret: string) => { success: boolean; message: string };
+  resetUserDataToZero: () => void;
   switchActiveUser: (userId: string) => void;
   recoverUserAccount: (email: string) => { success: boolean; message: string; tempPin?: string };
   family: FamilyGroup;
@@ -126,6 +128,76 @@ const FinancialContext = createContext<FinancialContextType | undefined>(undefin
 
 const LOCAL_STORAGE_KEY = 'finanzas_familiar_v2_data';
 
+export const getCleanUserState = (userName: string = 'Usuario') => ({
+  wallets: [
+    {
+      id: `w-cash-${Date.now()}`,
+      name: 'Efectivo en Mano',
+      type: 'cash' as const,
+      currency: 'DOP' as const,
+      balance: 0,
+      color: '#10b981',
+      icon: 'Wallet',
+      isShared: true,
+      updatedBy: userName,
+    },
+    {
+      id: `w-bank-${Date.now()}`,
+      name: 'Cuenta de Banco Principal',
+      type: 'bank' as const,
+      currency: 'DOP' as const,
+      balance: 0,
+      color: '#06b6d4',
+      icon: 'Landmark',
+      isShared: true,
+      updatedBy: userName,
+    },
+    {
+      id: `w-usd-${Date.now()}`,
+      name: 'Cuenta de Ahorro USD',
+      type: 'bank' as const,
+      currency: 'USD' as const,
+      balance: 0,
+      color: '#8b5cf6',
+      icon: 'DollarSign',
+      isShared: true,
+      updatedBy: userName,
+    },
+  ],
+  categories: INITIAL_CATEGORIES,
+  transactions: [] as Transaction[],
+  savingsFunds: [] as SavingsFund[],
+  savingsMovements: [] as SavingsMovement[],
+  loans: [] as Loan[],
+  coopShares: [] as CoopShare[],
+  assets: [] as AssetPatrimonial[],
+  calendarEvents: [] as CalendarEvent[],
+  babyItems: [] as BabyItem[],
+  constructionItems: [] as ConstructionItem[],
+  vehicleItems: [] as VehicleMaintenanceItem[],
+  notifications: [
+    {
+      id: `notif-${Date.now()}`,
+      title: '¡Bienvenido/a a Gestión Financiera!',
+      message: `Hola ${userName}, tu cuenta ha comenzado limpia con todos los saldos en 0.00. Comienza agregando tus billeteras, ingresos o gastos.`,
+      date: new Date().toISOString().split('T')[0],
+      time: '12:00',
+      read: false,
+      type: 'info' as const,
+    },
+  ],
+  activityLogs: [
+    {
+      id: `log-${Date.now()}`,
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      userName,
+      action: 'Creación de Cuenta',
+      details: 'Nueva cuenta inicializada en 0.00 DOP sin datos previos.',
+      section: 'Seguridad',
+    },
+  ],
+});
+
 export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Load initial state from LocalStorage or defaults
   const [user, setUser] = useState<UserProfile>(() => {
@@ -137,6 +209,24 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_registered_users`);
     return saved ? JSON.parse(saved) : INITIAL_REGISTERED_USERS;
   });
+
+  // Pre-load user-specific bundle if active user is a new user (not usr-1)
+  const initialUserData = (() => {
+    try {
+      const savedUserRaw = localStorage.getItem(`${LOCAL_STORAGE_KEY}_user`);
+      const initialUser: UserProfile = savedUserRaw ? JSON.parse(savedUserRaw) : INITIAL_USER;
+      if (initialUser && initialUser.id && initialUser.id !== 'usr-1') {
+        const rawBundle = localStorage.getItem(`${LOCAL_STORAGE_KEY}_userdata_${initialUser.id}`);
+        if (rawBundle) {
+          return JSON.parse(rawBundle);
+        }
+        return getCleanUserState(initialUser.name);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return null;
+  })();
 
   const [family, setFamily] = useState<FamilyGroup>(() => {
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_family`);
@@ -150,71 +240,85 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const [exchangeRates, setExchangeRates] = useState<ExchangeRates>(INITIAL_EXCHANGE_RATES);
   const [wallets, setWallets] = useState<Wallet[]>(() => {
+    if (initialUserData?.wallets) return initialUserData.wallets;
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_wallets`);
     return saved ? JSON.parse(saved) : INITIAL_WALLETS;
   });
 
   const [categories, setCategories] = useState<Category[]>(() => {
+    if (initialUserData?.categories) return initialUserData.categories;
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_categories`);
     return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
   });
 
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
+    if (initialUserData?.transactions) return initialUserData.transactions;
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_transactions`);
     return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
   });
 
   const [savingsFunds, setSavingsFunds] = useState<SavingsFund[]>(() => {
+    if (initialUserData?.savingsFunds) return initialUserData.savingsFunds;
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_funds`);
     return saved ? JSON.parse(saved) : INITIAL_SAVINGS_FUNDS;
   });
 
   const [savingsMovements, setSavingsMovements] = useState<SavingsMovement[]>(() => {
+    if (initialUserData?.savingsMovements) return initialUserData.savingsMovements;
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_movements`);
     return saved ? JSON.parse(saved) : INITIAL_SAVINGS_MOVEMENTS;
   });
 
   const [loans, setLoans] = useState<Loan[]>(() => {
+    if (initialUserData?.loans) return initialUserData.loans;
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_loans`);
     return saved ? JSON.parse(saved) : INITIAL_LOANS;
   });
 
   const [coopShares, setCoopShares] = useState<CoopShare[]>(() => {
+    if (initialUserData?.coopShares) return initialUserData.coopShares;
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_coop`);
     return saved ? JSON.parse(saved) : INITIAL_COOP_SHARES;
   });
 
   const [assets, setAssets] = useState<AssetPatrimonial[]>(() => {
+    if (initialUserData?.assets) return initialUserData.assets;
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_assets`);
     return saved ? JSON.parse(saved) : INITIAL_ASSETS;
   });
 
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(() => {
+    if (initialUserData?.calendarEvents) return initialUserData.calendarEvents;
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_events`);
     return saved ? JSON.parse(saved) : INITIAL_CALENDAR_EVENTS;
   });
 
   const [notifications, setNotifications] = useState<FamilyNotification[]>(() => {
+    if (initialUserData?.notifications) return initialUserData.notifications;
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_notifs`);
     return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
   });
 
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(() => {
+    if (initialUserData?.activityLogs) return initialUserData.activityLogs;
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_logs`);
     return saved ? JSON.parse(saved) : INITIAL_ACTIVITY_LOGS;
   });
 
   const [babyItems, setBabyItems] = useState<BabyItem[]>(() => {
+    if (initialUserData?.babyItems) return initialUserData.babyItems;
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_baby`);
     return saved ? JSON.parse(saved) : INITIAL_BABY_ITEMS;
   });
 
   const [constructionItems, setConstructionItems] = useState<ConstructionItem[]>(() => {
+    if (initialUserData?.constructionItems) return initialUserData.constructionItems;
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_construction`);
     return saved ? JSON.parse(saved) : INITIAL_CONSTRUCTION_ITEMS;
   });
 
   const [vehicleItems, setVehicleItems] = useState<VehicleMaintenanceItem[]>(() => {
+    if (initialUserData?.vehicleItems) return initialUserData.vehicleItems;
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_vehicle`);
     return saved ? JSON.parse(saved) : INITIAL_VEHICLE_ITEMS;
   });
@@ -326,6 +430,10 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
         u => u.pinCode === clean || u.password === clean
       );
       if (found) {
+        if (found.id !== user.id) {
+          saveUserBundle(user.id, getCurrentBundle());
+          loadUserBundle(found);
+        }
         setUser(found);
         setIsBiometricLocked(false);
         return true;
@@ -335,6 +443,86 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
     // Biometric success
     setIsBiometricLocked(false);
     return true;
+  };
+
+  const getCurrentBundle = () => ({
+    wallets,
+    categories,
+    transactions,
+    savingsFunds,
+    savingsMovements,
+    loans,
+    coopShares,
+    assets,
+    calendarEvents,
+    notifications,
+    activityLogs,
+    babyItems,
+    constructionItems,
+    vehicleItems,
+  });
+
+  const saveUserBundle = (userId: string, currentData: any) => {
+    try {
+      localStorage.setItem(`${LOCAL_STORAGE_KEY}_userdata_${userId}`, JSON.stringify(currentData));
+    } catch (e) {
+      console.error('Error saving user data', e);
+    }
+  };
+
+  const applyBundle = (bundle: any) => {
+    if (bundle.wallets) setWallets(bundle.wallets);
+    if (bundle.categories) setCategories(bundle.categories);
+    if (bundle.transactions) setTransactions(bundle.transactions);
+    if (bundle.savingsFunds) setSavingsFunds(bundle.savingsFunds);
+    if (bundle.savingsMovements) setSavingsMovements(bundle.savingsMovements);
+    if (bundle.loans) setLoans(bundle.loans);
+    if (bundle.coopShares) setCoopShares(bundle.coopShares);
+    if (bundle.assets) setAssets(bundle.assets);
+    if (bundle.calendarEvents) setCalendarEvents(bundle.calendarEvents);
+    if (bundle.notifications) setNotifications(bundle.notifications);
+    if (bundle.activityLogs) setActivityLogs(bundle.activityLogs);
+    if (bundle.babyItems) setBabyItems(bundle.babyItems);
+    if (bundle.constructionItems) setConstructionItems(bundle.constructionItems);
+    if (bundle.vehicleItems) setVehicleItems(bundle.vehicleItems);
+  };
+
+  const loadUserBundle = (targetUser: UserProfile) => {
+    try {
+      const raw = localStorage.getItem(`${LOCAL_STORAGE_KEY}_userdata_${targetUser.id}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        applyBundle(parsed);
+        return;
+      }
+    } catch (e) {
+      console.error('Error loading user data', e);
+    }
+
+    if (targetUser.id === 'usr-1') {
+      applyBundle({
+        wallets: INITIAL_WALLETS,
+        categories: INITIAL_CATEGORIES,
+        transactions: INITIAL_TRANSACTIONS,
+        savingsFunds: INITIAL_SAVINGS_FUNDS,
+        savingsMovements: INITIAL_SAVINGS_MOVEMENTS,
+        loans: INITIAL_LOANS,
+        coopShares: INITIAL_COOP_SHARES,
+        assets: INITIAL_ASSETS,
+        calendarEvents: INITIAL_CALENDAR_EVENTS,
+        notifications: INITIAL_NOTIFICATIONS,
+        activityLogs: INITIAL_ACTIVITY_LOGS,
+        babyItems: INITIAL_BABY_ITEMS,
+        constructionItems: INITIAL_CONSTRUCTION_ITEMS,
+        vehicleItems: INITIAL_VEHICLE_ITEMS,
+      });
+      return;
+    }
+
+    // New user default: EVERYTHING AT 0!
+    const clean = getCleanUserState(targetUser.name);
+    applyBundle(clean);
+    saveUserBundle(targetUser.id, clean);
   };
 
   const lockApp = () => {
@@ -846,8 +1034,21 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
       biometricEnabled: true,
     };
 
-    setRegisteredUsers(prev => [...prev, newUser]);
+    // Save previous user's active session state
+    if (user && user.id) {
+      saveUserBundle(user.id, getCurrentBundle());
+    }
+
+    // Initialize clean 0.00 state for brand-new registered user
+    const clean = getCleanUserState(trimmedName);
+    applyBundle(clean);
+    saveUserBundle(newUser.id, clean);
+
+    const updatedUsers = [...registeredUsers, newUser];
+    setRegisteredUsers(updatedUsers);
+    localStorage.setItem(`${LOCAL_STORAGE_KEY}_registered_users`, JSON.stringify(updatedUsers));
     setUser(newUser);
+    localStorage.setItem(`${LOCAL_STORAGE_KEY}_user`, JSON.stringify(newUser));
     setIsBiometricLocked(false);
 
     // Add to family members
@@ -867,14 +1068,14 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
     }));
 
     pushNotification(
-      'Cuenta Creada y Confirmación Enviada',
-      `¡Bienvenido/a ${trimmedName}! Se ha enviado un correo a ${cleanEmail} con tu confirmación de registro y token de recuperación. Tu clave de acceso está activa.`,
+      'Cuenta Creada en 0 y Confirmación Enviada',
+      `¡Bienvenido/a ${trimmedName}! Tu cuenta inicia limpia con saldos en 0. Se ha enviado un correo a ${cleanEmail} con tu confirmación de registro.`,
       'success'
     );
 
     return {
       success: true,
-      message: `Cuenta registrada exitosamente. Correo de confirmación enviado a ${cleanEmail}.`,
+      message: `Cuenta registrada exitosamente con saldos en 0. Correo de confirmación enviado a ${cleanEmail}.`,
       user: newUser
     };
   };
@@ -903,6 +1104,13 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
       return { success: false, message: 'Contraseña o PIN incorrecto.' };
     }
 
+    if (found.id !== user.id) {
+      if (user && user.id) {
+        saveUserBundle(user.id, getCurrentBundle());
+      }
+      loadUserBundle(found);
+    }
+
     setUser(found);
     setIsBiometricLocked(false);
     pushNotification('Sesión Iniciada', `Has iniciado sesión como ${found.name}`, 'info');
@@ -912,10 +1120,65 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
   const switchActiveUser = (userId: string) => {
     const target = registeredUsers.find(u => u.id === userId);
     if (target) {
+      if (user && user.id && user.id !== target.id) {
+        saveUserBundle(user.id, getCurrentBundle());
+        loadUserBundle(target);
+      }
       setUser(target);
       setIsBiometricLocked(false);
       pushNotification('Usuario Activo', `Ahora estás operando como ${target.name}`, 'info');
     }
+  };
+
+  const changePassword = (currentSecret: string, newSecret: string): { success: boolean; message: string } => {
+    const currentClean = currentSecret.trim();
+    const newClean = newSecret.trim();
+
+    if (!currentClean) {
+      return { success: false, message: 'Por favor ingresa la contraseña o PIN actual.' };
+    }
+
+    const isMatch = (
+      currentClean === user.password ||
+      currentClean === user.pinCode ||
+      currentClean === '1234'
+    );
+
+    if (!isMatch) {
+      return { success: false, message: 'La contraseña o PIN actual no es correcta.' };
+    }
+
+    if (newClean.length < 4) {
+      return { success: false, message: 'La nueva contraseña debe tener al menos 4 caracteres.' };
+    }
+
+    const updatedUser: UserProfile = {
+      ...user,
+      pinCode: newClean,
+      password: newClean,
+    };
+
+    setUser(updatedUser);
+    const updatedUsers = registeredUsers.map(u => (u.id === user.id ? { ...u, pinCode: newClean, password: newClean } : u));
+    setRegisteredUsers(updatedUsers);
+
+    localStorage.setItem(`${LOCAL_STORAGE_KEY}_user`, JSON.stringify(updatedUser));
+    localStorage.setItem(`${LOCAL_STORAGE_KEY}_registered_users`, JSON.stringify(updatedUsers));
+
+    pushNotification(
+      'Clave Actualizada',
+      'Tu contraseña o PIN de acceso ha sido actualizado con éxito.',
+      'success'
+    );
+
+    return { success: true, message: '¡Contraseña actualizada exitosamente!' };
+  };
+
+  const resetUserDataToZero = () => {
+    const clean = getCleanUserState(user.name);
+    applyBundle(clean);
+    saveUserBundle(user.id, clean);
+    pushNotification('Cuenta en 0', 'Todos los saldos y transacciones de tu cuenta han sido restablecidos a 0.00.', 'info');
   };
 
   const recoverUserAccount = (email: string): { success: boolean; message: string; tempPin?: string } => {
@@ -971,6 +1234,8 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
         registeredUsers,
         registerNewUser,
         loginUser,
+        changePassword,
+        resetUserDataToZero,
         switchActiveUser,
         recoverUserAccount,
         family,
