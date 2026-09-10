@@ -13,6 +13,7 @@ import { InstallAppModal } from './components/InstallAppModal';
 import { TransferModal } from './components/TransferModal';
 import { CoopShareModal } from './components/CoopShareModal';
 import { UserAuthModal } from './components/UserAuthModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { DashboardView } from './views/DashboardView';
 import { PresupuestoView } from './views/PresupuestoView';
@@ -83,34 +84,36 @@ const MainLayout: React.FC = () => {
 
         {/* Dynamic Tab Views */}
         <div className="animate-in fade-in duration-200">
-          {activeTab === 'dashboard' && (
-            <DashboardView
-              onOpenTransfer={handleOpenTransfer}
-              onOpenCoopModal={handleOpenCoopModal}
-              onOpenExport={() => setShowExportModal(true)}
-              onNavigateToTab={setActiveTab}
-            />
-          )}
+          <ErrorBoundary fallbackTitle="Error al cargar la sección">
+            {activeTab === 'dashboard' && (
+              <DashboardView
+                onOpenTransfer={handleOpenTransfer}
+                onOpenCoopModal={handleOpenCoopModal}
+                onOpenExport={() => setShowExportModal(true)}
+                onNavigateToTab={setActiveTab}
+              />
+            )}
 
-          {activeTab === 'presupuesto' && <PresupuestoView />}
+            {activeTab === 'presupuesto' && <PresupuestoView />}
 
-          {activeTab === 'wallets' && (
-            <WalletsView onOpenTransfer={handleOpenTransfer} />
-          )}
+            {activeTab === 'wallets' && (
+              <WalletsView onOpenTransfer={handleOpenTransfer} />
+            )}
 
-          {activeTab === 'ahorros' && <AhorrosMetasView />}
+            {activeTab === 'ahorros' && <AhorrosMetasView />}
 
-          {activeTab === 'prestamos' && <PrestamosView />}
+            {activeTab === 'prestamos' && <PrestamosView />}
 
-          {activeTab === 'patrimonio' && <PatrimonioView />}
+            {activeTab === 'patrimonio' && <PatrimonioView />}
 
-          {activeTab === 'reportes' && (
-            <ReportesView onOpenExport={() => setShowExportModal(true)} />
-          )}
+            {activeTab === 'reportes' && (
+              <ReportesView onOpenExport={() => setShowExportModal(true)} />
+            )}
 
-          {activeTab === 'especiales' && <EspecialesView />}
+            {activeTab === 'especiales' && <EspecialesView />}
 
-          {activeTab === 'ajustes' && <ConfiguracionView />}
+            {activeTab === 'ajustes' && <ConfiguracionView />}
+          </ErrorBoundary>
         </div>
       </main>
 

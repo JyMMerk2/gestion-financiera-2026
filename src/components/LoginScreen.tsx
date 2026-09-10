@@ -5,7 +5,7 @@ import { AlertCircle, X, HelpCircle, CheckCircle2, Eye, EyeOff } from 'lucide-re
 export const LoginScreen: React.FC = () => {
   const { loginUser, registerNewUser, unlockWithPinOrBiometric, user } = useFinancial();
   const [username, setUsername] = useState<string>('JMERCADO');
-  const [password, setPassword] = useState<string>('1234');
+  const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [isRegisterMode, setIsRegisterMode] = useState<boolean>(false);
@@ -32,19 +32,13 @@ export const LoginScreen: React.FC = () => {
       return;
     }
 
-    // Try standard loginUser (supports username, email, name with PIN or password)
+    // Standard loginUser checking strictly the user's current credentials
     const res = loginUser(username, password);
     if (res.success) {
       return;
     }
 
-    // Fallback: unlock directly if matches current user or default 1234
-    const success = unlockWithPinOrBiometric(password);
-    if (success) {
-      return;
-    }
-
-    setErrorMsg(res.message || 'Usuario o contraseña incorrectos. Intenta con la clave "1234".');
+    setErrorMsg(res.message || 'Usuario o contraseña incorrectos.');
   };
 
   const handleRegister = (e: React.FormEvent) => {
@@ -313,31 +307,20 @@ export const LoginScreen: React.FC = () => {
               Recuperar Acceso y Soporte
             </h3>
             <p className="text-xs text-slate-600 leading-relaxed mb-4">
-              Tu clave o PIN de acceso predeterminado es <strong className="text-slate-900 font-bold font-mono">1234</strong>.
+              Si olvidaste tu contraseña o necesitas restablecer tus credenciales de acceso, puedes solicitar asistencia técnica al administrador del sistema:
             </p>
             <p className="text-xs text-slate-600 leading-relaxed mb-6">
-              Si necesitas asistencia técnica directa o restablecer tus credenciales familiares, contáctanos a:
+              Correo de Soporte:
               <br />
               <strong className="text-blue-600 font-bold">juan.mercado@dr.boombah.com</strong>
             </p>
 
             <div className="flex gap-3">
               <button
-                onClick={() => {
-                  setPassword(user.password || user.pinCode || '1234');
-                  setUsername(user.name || 'JMERCADO');
-                  setShowSupportModal(false);
-                  unlockWithPinOrBiometric(user.password || user.pinCode || '1234');
-                }}
-                className="flex-1 py-3 px-4 rounded-xl bg-black hover:bg-slate-900 text-white font-bold text-xs uppercase tracking-wider transition-all"
-              >
-                Ingresar con clave actual
-              </button>
-              <button
                 onClick={() => setShowSupportModal(false)}
-                className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all"
+                className="w-full py-3 px-4 rounded-xl bg-black hover:bg-slate-900 text-white font-bold text-xs uppercase tracking-wider transition-all"
               >
-                Cerrar
+                Entendido
               </button>
             </div>
           </div>

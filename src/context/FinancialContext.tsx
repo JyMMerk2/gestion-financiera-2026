@@ -114,6 +114,10 @@ interface FinancialContextType {
   addConstructionItem: (item: Omit<ConstructionItem, 'id'>) => void;
   addVehicleItem: (item: Omit<VehicleMaintenanceItem, 'id'>) => void;
   
+  // Category management
+  addCategory: (cat: Omit<Category, 'id'>) => void;
+  updateCategoryBudget: (categoryId: string, newBudget: number) => void;
+  
   // Family & Roles
   joinFamilyWithCode: (code: string, newFamilyName?: string) => boolean;
   generateNewInviteCode: () => string;
@@ -133,35 +137,30 @@ export const getCleanUserState = (userName: string = 'Usuario') => ({
     {
       id: `w-cash-${Date.now()}`,
       name: 'Efectivo en Mano',
-      type: 'cash' as const,
       currency: 'DOP' as const,
-      balance: 0,
+      balanceDOP: 0,
+      balanceOriginal: 0,
       color: '#10b981',
-      icon: 'Wallet',
-      isShared: true,
-      updatedBy: userName,
+      icon: '💵',
+      isDefault: true,
     },
     {
       id: `w-bank-${Date.now()}`,
       name: 'Cuenta de Banco Principal',
-      type: 'bank' as const,
       currency: 'DOP' as const,
-      balance: 0,
+      balanceDOP: 0,
+      balanceOriginal: 0,
       color: '#06b6d4',
-      icon: 'Landmark',
-      isShared: true,
-      updatedBy: userName,
+      icon: '🏦',
     },
     {
       id: `w-usd-${Date.now()}`,
       name: 'Cuenta de Ahorro USD',
-      type: 'bank' as const,
       currency: 'USD' as const,
-      balance: 0,
+      balanceDOP: 0,
+      balanceOriginal: 0,
       color: '#8b5cf6',
-      icon: 'DollarSign',
-      isShared: true,
-      updatedBy: userName,
+      icon: '🌎',
     },
   ],
   categories: INITIAL_CATEGORIES,
@@ -420,8 +419,7 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
       const clean = credential.trim();
       if (
         clean === user.pinCode ||
-        clean === user.password ||
-        clean === '1234'
+        clean === user.password
       ) {
         setIsBiometricLocked(false);
         return true;
@@ -976,6 +974,22 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
     deleteAssetPatrimonial(id);
   };
 
+  const addCategory = (cat: Omit<Category, 'id'>) => {
+    const newCategory: Category = {
+      ...cat,
+      id: `cat-${Date.now()}`,
+    };
+    setCategories(prev => [...prev, newCategory]);
+    pushNotification('Nueva Categoría', `Se creó la categoría "${newCategory.name}"`, 'success');
+  };
+
+  const updateCategoryBudget = (categoryId: string, newBudget: number) => {
+    setCategories(prev =>
+      prev.map(c => (c.id === categoryId ? { ...c, budgetMonthly: newBudget } : c))
+    );
+    pushNotification('Presupuesto Actualizado', 'Se actualizó el límite presupuestario.', 'info');
+  };
+
   // User Management, Registration, Login & Email Recovery
   const registerNewUser = (
     name: string,
@@ -1084,23 +1098,35 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
     const q = emailOrName.trim().toLowerCase();
     const cleanSecret = pinOrPassword.trim();
 
-    const found = registeredUsers.find(
+    let found = registeredUsers.find(
       u =>
         u.email.toLowerCase() === q ||
         u.name.toLowerCase() === q ||
-        (q === 'jmercado' && u.email.toLowerCase().includes('juan')) ||
+        (q === 'jmercado' && (u.email.toLowerCase().includes('juan') || u.name.toLowerCase().includes('juan') || u.id === 'usr-1')) ||
         (q === 'admin' && u.role === 'admin')
     );
 
-    if (!found) {
-      if ((q === 'jmercado' || q === 'admin') && (cleanSecret === '1234' || cleanSecret === user.pinCode || cleanSecret === user.password)) {
-        setIsBiometricLocked(false);
-        return { success: true, message: `Sesión iniciada como ${user.name}` };
+    if (!found && user) {
+      if (
+        user.email.toLowerCase() === q ||
+        user.name.toLowerCase() === q ||
+        (q === 'jmercado' && (user.email.toLowerCase().includes('juan') || user.id === 'usr-1')) ||
+        (q === 'admin' && user.role === 'admin')
+      ) {
+        found = user;
       }
+    }
+
+    if (!found) {
       return { success: false, message: 'No se encontró ningún usuario con ese correo o nombre.' };
     }
 
-    if (found.pinCode !== cleanSecret && found.password !== cleanSecret && cleanSecret !== '1234') {
+    const isValid = (
+      cleanSecret === found.password ||
+      cleanSecret === found.pinCode
+    );
+
+    if (!isValid) {
       return { success: false, message: 'Contraseña o PIN incorrecto.' };
     }
 
@@ -1140,8 +1166,7 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
 
     const isMatch = (
       currentClean === user.password ||
-      currentClean === user.pinCode ||
-      currentClean === '1234'
+      currentClean === user.pinCode
     );
 
     if (!isMatch) {
@@ -1159,7 +1184,10 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
     };
 
     setUser(updatedUser);
-    const updatedUsers = registeredUsers.map(u => (u.id === user.id ? { ...u, pinCode: newClean, password: newClean } : u));
+    const userExists = registeredUsers.some(u => u.id === user.id);
+    const updatedUsers = userExists
+      ? registeredUsers.map(u => (u.id === user.id ? { ...u, pinCode: newClean, password: newClean } : u))
+      : [...registeredUsers, updatedUser];
     setRegisteredUsers(updatedUsers);
 
     localStorage.setItem(`${LOCAL_STORAGE_KEY}_user`, JSON.stringify(updatedUser));
@@ -1293,6 +1321,8 @@ export const FinancialProvider: React.FC<{ children: ReactNode }> = ({ children 
         toggleBabyItemStatus,
         addConstructionItem,
         addVehicleItem,
+        addCategory,
+        updateCategoryBudget,
         joinFamilyWithCode,
         generateNewInviteCode,
         updateMemberRole,
