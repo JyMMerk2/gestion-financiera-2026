@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#060810" />
+    </linearGradient>
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#fbbf24" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bg)" stroke="#1e293b" stroke-width="8"/>
+  <circle cx="256" cy="256" r="170" fill="none" stroke="url(#cyanGrad)" stroke-width="20" stroke-dasharray="800 200" stroke-linecap="round"/>
+  <!-- Diamond / Currency Symbol -->
+  <path d="M256 130 L350 224 L256 318 L162 224 Z" fill="none" stroke="url(#cyanGrad)" stroke-width="18" stroke-linejoin="round"/>
+  <circle cx="256" cy="224" r="32" fill="url(#goldGrad)"/>
+  <!-- Family Pillars -->
+  <path d="M190 350 L190 400 M256 340 L256 410 M322 350 L322 400" stroke="#f8fafc" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="190" cy="330" r="14" fill="#f8fafc"/>
+  <circle cx="256" cy="315" r="16" fill="#00f2fe"/>
+  <circle cx="322" cy="330" r="14" fill="#f8fafc"/>
+</svg>
